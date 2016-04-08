@@ -1,9 +1,9 @@
 <?php
 
-namespace roopz\imap;
+namespace mgermani\imap;
 
 use Yii;
-use roopz\imap\Mailbox;
+use mgermani\imap\Mailbox;
 
 /* 
  * 
