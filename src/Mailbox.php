@@ -1,6 +1,6 @@
 <?php
 
-namespace roopz\imap;
+namespace mgermani\imap;
 use yii\base\Component;
 use stdClass;
 
