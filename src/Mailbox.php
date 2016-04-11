@@ -425,7 +425,7 @@ class Mailbox extends component{
 
 		if(isset($head->reply_to)) {
 			foreach($head->reply_to as $replyTo) {
-				$mail->replyTo[strtolower($replyTo->mailbox . '@' . (!empty($replyTo->host) ? $replyTo->host : ""))] = isset($replyTo->personal) ? $this->decodeMimeStr($replyTo->personal, $this->serverEncoding) : null;
+				$mail->replyTo[strtolower((!empty($replyTo->mailbox) ? $replyTo->mailbox : "") . '@' . (!empty($replyTo->host) ? $replyTo->host : ""))] = isset($replyTo->personal) ? $this->decodeMimeStr($replyTo->personal, $this->serverEncoding) : null;
 			}
 		}
 
