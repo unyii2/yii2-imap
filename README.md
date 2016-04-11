@@ -1,6 +1,6 @@
 yii2 Imap
 ==========
-This library can be used to read mails from IMAP server using PHP and Yii2.
+This library is a fork of https://github.com/yiioverflow/yii2-imap
 
 Installation by composer
 ------------
