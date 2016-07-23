@@ -1,5 +1,5 @@
 {
-    "name": "mgermani/yii2-imap",
+    "name": "unyii2/yii2-imap",
     "minimum-stability": "dev",
     "prefer-stable": "true",
     "description": "yii2 extension to read and process mails from IMAP and PHP",
