@@ -1,9 +1,11 @@
 <?php
 
-namespace mgermani\imap;
+namespace unyii2\imap;
 
 use Yii;
-use mgermani\imap\Mailbox;
+use yii\base\Component;
+use unyii2\imap\ImapConnection;
+
 
 /* 
  * 
@@ -37,7 +39,7 @@ use mgermani\imap\Mailbox;
  * ~~~
 **/
 
-class Imap extends Mailbox
+class Imap extends component
 {
     
     private $_connection = [];    
@@ -64,21 +66,26 @@ class Imap extends Mailbox
     }  
     
     /**
-     * @return array
+     * 
+     * @return \mgermani\imap\ImapConnection
+     * @throws Exception
      */
     public function createConnection()
     {
-        $this->imapPath = $this->_connection['imapPath'];
-        $this->imapLogin = $this->_connection['imapLogin'];
-        $this->imapPassword = $this->_connection['imapPassword'];
-        $this->serverEncoding = $this->_connection['serverEncoding'];
-        $this->attachmentsDir = $this->_connection['attachmentsDir'];
-        if($this->attachmentsDir) {
-                if(!is_dir($this->attachmentsDir)) {
-                        throw new Exception('Directory "' . $this->attachmentsDir . '" not found');
+        
+        $imapConnection = new ImapConnection();
+        
+        $imapConnection->imapPath = $this->_connection['imapPath'];
+        $imapConnection->imapLogin = $this->_connection['imapLogin'];
+        $imapConnection->imapPassword = $this->_connection['imapPassword'];
+        $imapConnection->serverEncoding = $this->_connection['serverEncoding'];
+        $imapConnection->attachmentsDir = $this->_connection['attachmentsDir'];
+        if($imapConnection->attachmentsDir) {
+                if(!is_dir($imapConnection->attachmentsDir)) {
+                        throw new Exception('Directory "' . $imapConnection->attachmentsDir . '" not found');
                 }
-                $this->attachmentsDir = rtrim(realpath($this->attachmentsDir), '\\/');
+                $imapConnection->attachmentsDir = rtrim(realpath($imapConnection->attachmentsDir), '\\/');
         }
-        return $this;
+        return $imapConnection;
     }     
 }

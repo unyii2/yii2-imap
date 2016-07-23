@@ -1,15 +1,16 @@
 <?php
 
-namespace mgermani\imap;
-use yii\base\Component;
+namespace unyii2\imap;
+
 use stdClass;
+use unyii2\imap\ImapConnection;
 
 /**
    *Copyright (c) 2012 by Barbushin Sergey <barbushin@gmail.com>.
    *All rights reserved.
 */
 
-class Mailbox extends component{
+class Mailbox {
 
 	protected $imapPath;
 	protected $imapLogin;
@@ -20,7 +21,15 @@ class Mailbox extends component{
 	protected $serverEncoding;
 	protected $attachmentsDir;
 
-	/**
+    public function __construct(ImapConnection $imapConnection) {
+        $this->imapPath = $imapConnection->imapPath;
+        $this->imapLogin = $imapConnection->imapLogin;
+        $this->imapPassword = $imapConnection->imapPassword;
+        $this->serverEncoding = $imapConnection->serverEncoding;
+        $this->attachmentsDir = $imapConnection->attachmentsDir;        
+    }
+
+        /**
 	 * Set custom connection arguments of imap_open method. See http://php.net/imap_open
 	 * @param int $options
 	 * @param int $retriesNum

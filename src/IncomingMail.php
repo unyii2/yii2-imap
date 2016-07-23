@@ -1,6 +1,6 @@
 <?php
 
-namespace mgermani\imap;
+namespace unyii2\imap;
 
 /**
    *Copyright (c) 2012 by Barbushin Sergey <barbushin@gmail.com>.
