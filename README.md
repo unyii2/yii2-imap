@@ -51,7 +51,7 @@ Connection details set on fly
 $imapConnection = new unyii2\imap\ImapConnection
 
 $imapConnection->imapPath = '{imap.gmail.com:993/imap/ssl}INBOX';
-$imapConnection->imapLogin' = 'username';
+$imapConnection->imapLogin = 'username';
 $imapConnection->imapPassword = 'password';
 $imapConnection->serverEncoding = 'encoding'; // utf-8 default.
 $imapConnection->attachmentsDir = '/';
