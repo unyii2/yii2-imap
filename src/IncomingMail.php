@@ -23,7 +23,9 @@ class IncomingMail {
 
 	public $textPlain;
 	public $textHtml;
-	/** @var IncomingMailAttachment[] */
+    
+    public $head;
+    /** @var IncomingMailAttachment[] */
 	protected $attachments = array();
 
 	public function addAttachment(IncomingMailAttachment $attachment) {
