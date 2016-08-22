@@ -24,7 +24,8 @@ class IncomingMail {
 	public $textPlain;
 	public $textHtml;
     
-    public $head;
+    public $messageId;
+
     /** @var IncomingMailAttachment[] */
 	protected $attachments = array();
 

@@ -68,14 +68,33 @@ $mailbox->searchMailBox(ALL)// Prints all Mail ids.
 print_r($mailIds);
 ```
 
+#Do not read attachments
+$mailbox->readMailParts = false;
+
 #To read Inbox contents
 ```php
 foreach($mailIds as $mailId)
 {
     // Returns Mail contents
     $mail = $mailbox->getMail($mailId); 
+
+    if(alreadyProcesedMessage($mail->messageId)){
+        continue;
+    }
+
+    // Use, if $mailbox->readMailParts = false; 
+    // Read mail parts (plain body, html body and attachments
+    $mail = $mailbox->getMailParts($mail);
+
     // Returns mail attachements if any or else empty array
-    $attachment = $mail->getAttachments(); 
+    $attachments = $mail->getAttachments(); 
+    foreach($attachments as $attachment){
+        echo ' Attachment:' . $attachment->name . PHP_EOL;
+        
+        // Delete attachment file
+        unlink($attachment->filePath);
+
+    }
 }
 ```
 

@@ -20,6 +20,10 @@ class Mailbox {
 	protected $imapParams = array();
 	protected $serverEncoding;
 	protected $attachmentsDir;
+    
+	public $readMailParts = true;
+    
+    private $markAsSeen = false;
 
     public function __construct(ImapConnection $imapConnection) {
         $this->imapPath = $imapConnection->imapPath;
@@ -405,21 +409,23 @@ class Mailbox {
      */
 	public function getMail($mailId, $markAsSeen = true) {
 		
+        $this->markAsSeen = $markAsSeen;
+        
 		$mail = new IncomingMail();
-        $mail->head = imap_rfc822_parse_headers(imap_fetchheader($this->getImapStream(), $mailId, FT_UID));        
-        //var_dump($mail->head);exit;
-		$mail->id = $mailId;
-		$mail->date = date('Y-m-d H:i:s', isset($mail->head->date) ? strtotime(preg_replace('/\(.*?\)/', '', $mail->head->date)) : time());
-		$mail->subject = isset($mail->head->subject) ? $this->decodeMimeStr($mail->head->subject, $this->serverEncoding) : null;
-        
-		$mail->fromName = isset($mail->head->from[0]->personal) ? $this->decodeMimeStr($mail->head->from[0]->personal, $this->serverEncoding) : null;
-        var_dump($mail->fromName);
-        
-		$mail->fromAddress = strtolower($mail->head->from[0]->mailbox . '@' . (!empty($mail->head->from[0]->host) ? $mail->head->from[0]->host : ""));
+        $head = imap_rfc822_parse_headers(imap_fetchheader($this->getImapStream(), $mailId, FT_UID));        
 
-		if(isset($mail->head->to)) {
+		$mail->id = $mailId;
+        $mail->messageId = $head->message_id;
+		$mail->date = date('Y-m-d H:i:s', isset($head->date) ? strtotime(preg_replace('/\(.*?\)/', '', $head->date)) : time());
+		$mail->subject = isset($head->subject) ? $this->decodeMimeStr($head->subject, $this->serverEncoding) : null;
+        
+		$mail->fromName = isset($head->from[0]->personal) ? $this->decodeMimeStr($head->from[0]->personal, $this->serverEncoding) : null;
+        
+		$mail->fromAddress = strtolower($head->from[0]->mailbox . '@' . (!empty($head->from[0]->host) ? $head->from[0]->host : ""));
+
+		if(isset($head->to)) {
 			$toStrings = array();
-			foreach($mail->head->to as $to) {
+			foreach($head->to as $to) {
 				if(!empty($to->mailbox) && !empty($to->host)) {
 					$toEmail = strtolower($to->mailbox . '@' . $to->host);
 					$toName = isset($to->personal) ? $this->decodeMimeStr($to->personal, $this->serverEncoding) : null;
@@ -430,33 +436,47 @@ class Mailbox {
 			$mail->toString = implode(', ', $toStrings);
 		}
 
-		if(isset($mail->head->cc)) {
-			foreach($mail->head->cc as $cc) {
+		if(isset($head->cc)) {
+			foreach($head->cc as $cc) {
 				$mail->cc[strtolower($cc->mailbox . '@' . (!empty($cc->host) ? $cc->host : ""))] = isset($cc->personal) ? $this->decodeMimeStr($cc->personal, $this->serverEncoding) : null;
 			}
 		}
 
-		if(isset($mail->head->reply_to)) {
-			foreach($mail->head->reply_to as $replyTo) {
+		if(isset($head->reply_to)) {
+			foreach($head->reply_to as $replyTo) {
 				$mail->replyTo[strtolower((!empty($replyTo->mailbox) ? $replyTo->mailbox : "") . '@' . (!empty($replyTo->host) ? $replyTo->host : ""))] = isset($replyTo->personal) ? $this->decodeMimeStr($replyTo->personal, $this->serverEncoding) : null;
 			}
 		}
 
-		$mailStructure = imap_fetchstructure($this->getImapStream(), $mailId, FT_UID);
-
-		if(empty($mailStructure->parts)) {
-			$this->initMailPart($mail, $mailStructure, 0, $markAsSeen);
-		}
-		else {
-			foreach($mailStructure->parts as $partNum => $partStructure) {
-				$this->initMailPart($mail, $partStructure, $partNum + 1, $markAsSeen);
-			}
-		}
-
+        if($this->readMailParts){
+            $mail = $this->getMailParts($mail);
+        }
+        
 		return $mail;
 	}
 
-	protected function initMailPart(IncomingMail $mail, $partStructure, $partNum, $markAsSeen = true) {
+    /**
+     * load mail parts - body plain & html and attachments
+     * @param IncomingMail $mail
+     * @return IncomingMail $mail 
+     */
+    public function getMailParts($mail)
+    {
+		$mailStructure = imap_fetchstructure($this->getImapStream(), $mail->id, FT_UID);
+
+		if(empty($mailStructure->parts)) {
+			$this->initMailPart($mail, $mailStructure, 0, $this->markAsSeen);
+		}
+		else {
+			foreach($mailStructure->parts as $partNum => $partStructure) {
+				$this->initMailPart($mail, $partStructure, $partNum + 1, $this->markAsSeen);
+			}
+		}        
+        
+        return $mail;        
+    }
+
+    protected function initMailPart(IncomingMail $mail, $partStructure, $partNum, $markAsSeen = true) {
         $options = FT_UID;
         if(!$markAsSeen) {
             $options |= FT_PEEK;
