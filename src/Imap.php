@@ -39,7 +39,7 @@ use unyii2\imap\ImapConnection;
  * ~~~
 **/
 
-class Imap extends component
+class Imap extends Сomponent
 {
     
     private $_connection = [];    
