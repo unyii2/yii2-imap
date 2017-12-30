@@ -1,5 +1,9 @@
 yii2 Imap
 ==========
+
+[![Total Downloads](https://img.shields.io/packagist/dt/unyii2/yii2-imap.svg?style=flat-square)](https://packagist.org/packages/unyii2/yii2-imap) 
+
+
 This library is a fork of https://github.com/yiioverflow/yii2-imap
 
 Installation by composer
