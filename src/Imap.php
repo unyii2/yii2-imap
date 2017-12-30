@@ -2,13 +2,11 @@
 
 namespace unyii2\imap;
 
-use Yii;
-use yii\base\Component;
-use unyii2\imap\ImapConnection;
+use yii\base\Exception;
+use yii\base\InvalidConfigException;
 
 
 /* 
- * 
  * Copyright (c) 2015 by Roopan Valiya Veetil <yiioverflow@gmail.com>.
  * All rights reserved.
  * Date : 29-07-2015
@@ -32,6 +30,7 @@ use unyii2\imap\ImapConnection;
  *             'imapLogin' => 'username',
  *             'imapPassword' => 'password',
  *             'serverEncoding'=>'encoding' // utf-8 default.
+ *              'decodeMimeStr' => false // Return as is, default -> true
  *         ],
  *     ],
  *     ...
@@ -42,32 +41,39 @@ use unyii2\imap\ImapConnection;
 class Imap extends Сomponent
 {
     
-    private $_connection = [];    
+    /** @var array  */
+    private $_connectionParams = [];
+
+    /** @var ImapConnection  */
+    private $_connection;
 
     /**
-     * @param array
+     * @param array $connectionParams
      * @throws InvalidConfigException on invalid argument.
      */
-    public function setConnection($connection)
+    public function setConnection($connectionParams)
     {
-        if (!is_array($connection)) {
+        if (!is_array($connectionParams)) {
             throw new InvalidConfigException('You should set connection params in your config. Please read yii2-imap doc for more info');
         }
-        $this->_connection = $connection;
+        $this->_connectionParams = $connectionParams;
     }
 
     /**
-     * @return array
+     * @return ImapConnection
+     * @throws Exception
      */
     public function getConnection()
     {
-        $this->_connection = $this->createConnection($this->_connection );
+        if(!$this->_connection) {
+            $this->_connection = $this->createConnection();
+        }
         return $this->_connection;
     }  
     
     /**
      * 
-     * @return \mgermani\imap\ImapConnection
+     * @return ImapConnection
      * @throws Exception
      */
     public function createConnection()
@@ -75,16 +81,18 @@ class Imap extends Сomponent
         
         $imapConnection = new ImapConnection();
         
-        $imapConnection->imapPath = $this->_connection['imapPath'];
-        $imapConnection->imapLogin = $this->_connection['imapLogin'];
-        $imapConnection->imapPassword = $this->_connection['imapPassword'];
-        $imapConnection->serverEncoding = $this->_connection['serverEncoding'];
-        $imapConnection->attachmentsDir = $this->_connection['attachmentsDir'];
+        $imapConnection->imapPath = $this->_connectionParams['imapPath'];
+        $imapConnection->imapLogin = $this->_connectionParams['imapLogin'];
+        $imapConnection->imapPassword = $this->_connectionParams['imapPassword'];
+        $imapConnection->serverEncoding = $this->_connectionParams['serverEncoding'];
+        $imapConnection->attachmentsDir = $this->_connectionParams['attachmentsDir'];
+        $imapConnection->decodeMimeStr = $this->_connectionParams['decodeMimeStr'];
+
         if($imapConnection->attachmentsDir) {
-                if(!is_dir($imapConnection->attachmentsDir)) {
-                        throw new Exception('Directory "' . $imapConnection->attachmentsDir . '" not found');
-                }
-                $imapConnection->attachmentsDir = rtrim(realpath($imapConnection->attachmentsDir), '\\/');
+            if(!is_dir($imapConnection->attachmentsDir)) {
+                    throw new Exception('Directory "' . $imapConnection->attachmentsDir . '" not found');
+            }
+            $imapConnection->attachmentsDir = rtrim(realpath($imapConnection->attachmentsDir), '\\/');
         }
         return $imapConnection;
     }     

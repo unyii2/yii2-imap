@@ -3,7 +3,6 @@
 namespace unyii2\imap;
 
 use stdClass;
-use unyii2\imap\ImapConnection;
 
 /**
    *Copyright (c) 2012 by Barbushin Sergey <barbushin@gmail.com>.
@@ -20,6 +19,7 @@ class Mailbox {
 	protected $imapParams = array();
 	protected $serverEncoding;
 	protected $attachmentsDir;
+    protected $decodeMimeStr = true;
     
 	public $readMailParts = true;
     
@@ -549,7 +549,7 @@ class Mailbox {
 				$data = $this->convertStringEncoding($data, $params['charset'], $this->serverEncoding);
 			}
 			if($partStructure->type == 0 && $data) {
-				if(strtolower($partStructure->subtype) == 'plain') {
+				if(strtolower($partStructure->subtype) === 'plain') {
 					$mail->textPlain .= $data;
 				}
 				else {
@@ -562,7 +562,7 @@ class Mailbox {
 		}
 		if(!empty($partStructure->parts)) {
 			foreach($partStructure->parts as $subPartNum => $subPartStructure) {
-				if($partStructure->type == 2 && $partStructure->subtype == 'RFC822') {
+				if($partStructure->type == 2 && $partStructure->subtype === 'RFC822') {
 					$this->initMailPart($mail, $subPartStructure, $partNum, $markAsSeen);
 				}
 				else {
@@ -572,19 +572,28 @@ class Mailbox {
 		}
 	}
 
+    /**
+     * @param $string
+     * @param string $charset
+     * @return string
+     */
 	protected function decodeMimeStr($string, $charset = 'utf-8') {
 		$newString = '';
 		$elements = imap_mime_header_decode($string);
-		for($i = 0; $i < count($elements); $i++) {
-			if($elements[$i]->charset == 'default') {
-				$elements[$i]->charset = 'iso-8859-1';
-			}
-			$newString .= $this->convertStringEncoding($elements[$i]->text, $elements[$i]->charset, $charset);
-		}
+        foreach ($elements AS $i => $element) {
+            if ($this->decodeMimeStr) {
+                if ($elements[$i]->charset === 'default') {
+                    $elements[$i]->charset = 'iso-8859-1';
+                }
+                $newString .= $this->convertStringEncoding($elements[$i]->text, $elements[$i]->charset, $charset);
+             } else {
+                $newString .= $elements[$i]->text;
+            }
+        }
 		return $newString;
 	}
 
-	function isUrlEncoded($string) {
+	PROTECTED function isUrlEncoded($string) {
 		$hasInvalidChars = preg_match( '#[^%a-zA-Z0-9\-_\.\+]#', $string );
 		$hasEscapedChars = preg_match( '#%[a-zA-Z0-9]{2}#', $string );
 		return !$hasInvalidChars && $hasEscapedChars;
