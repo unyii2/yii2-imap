@@ -86,7 +86,10 @@ class Imap extends Сomponent
         $imapConnection->imapPassword = $this->_connectionParams['imapPassword'];
         $imapConnection->serverEncoding = $this->_connectionParams['serverEncoding'];
         $imapConnection->attachmentsDir = $this->_connectionParams['attachmentsDir'];
-        $imapConnection->decodeMimeStr = $this->_connectionParams['decodeMimeStr'];
+        //Optional decoding of the MIME-string
+        if (isset($this->_connectionParams['decodeMimeStr'])) {
+	        $imapConnection->decodeMimeStr = $this->_connectionParams['decodeMimeStr'];
+        }
 
         if($imapConnection->attachmentsDir) {
             if(!is_dir($imapConnection->attachmentsDir)) {

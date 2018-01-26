@@ -9,5 +9,6 @@ class ImapConnection {
     public $imapPassword;
     public $serverEncoding;
     public $attachmentsDir;
+    public $decodeMimeStr;
 
 }
