@@ -3,6 +3,7 @@
 namespace unyii2\imap;
 
 use stdClass;
+use Throwable;
 
 /**
    *Copyright (c) 2012 by Barbushin Sergey <barbushin@gmail.com>.
@@ -67,11 +68,7 @@ class Mailbox {
 	protected function initImapStream() {
 		$imapStream = @imap_open($this->imapPath, $this->imapLogin, $this->imapPassword, $this->imapOptions, $this->imapRetriesNum, $this->imapParams);
 		if(!$imapStream) {
-			$lastImapError = imap_last_error();
-            imap_errors();
-            imap_alerts();
-
-            throw new Exception('Connection error: ' . $lastImapError);
+            throw new Exception('Connection error: ' . imap_last_error());
 		}
 		return $imapStream;
 	}
@@ -640,4 +637,10 @@ class Mailbox {
 
 class Exception extends \Exception {
 
+    public function __construct(string $message = '', int $code = 0, Throwable $previous = null)
+    {
+        imap_errors();
+        imap_alerts();
+        parent::__construct($message, $code, $previous);
+    }
 }
