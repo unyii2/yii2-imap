@@ -75,6 +75,7 @@ class Mailbox {
 	protected function disconnect() {
 		$imapStream = $this->getImapStream(false);
 		if($imapStream && is_resource($imapStream)) {
+            imap_errors();
 			imap_close($imapStream, CL_EXPUNGE);
 		}
 	}
