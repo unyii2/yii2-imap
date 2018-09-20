@@ -66,11 +66,11 @@ class Mailbox {
 
 	protected function initImapStream() {
 		$imapStream = @imap_open($this->imapPath, $this->imapLogin, $this->imapPassword, $this->imapOptions, $this->imapRetriesNum, $this->imapParams);
+		if(!$imapStream) {
+			throw new Exception('Connection error: ' . @imap_last_error());
+		}
         imap_errors();
         imap_alerts();
-		if(!$imapStream) {
-			throw new Exception('Connection error: ' . imap_last_error());
-		}
 		return $imapStream;
 	}
 
