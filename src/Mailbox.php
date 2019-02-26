@@ -50,6 +50,7 @@ class Mailbox {
 	 * Get IMAP mailbox connection stream
 	 * @param bool $forceConnection Initialize connection if it's not initialized
 	 * @return null|resource
+     * @throws Exception
 	 */
 	public function getImapStream($forceConnection = true) {
 		static $imapStream;
@@ -91,7 +92,8 @@ class Mailbox {
 	 *  Recent - number of recent mails in the mailbox
 	 *
 	 * @return stdClass
-	 */
+     * @throws Exception
+     */
 	public function checkMailbox() {
 		return imap_check($this->getImapStream());
 	}
@@ -100,8 +102,8 @@ class Mailbox {
 	 * Creates a new mailbox specified by mailbox.
 	 *
 	 * @return bool
-	 */
-
+     * @throws Exception
+     */
 	public function createMailbox() {
 		return imap_createmailbox($this->getImapStream(), imap_utf7_encode($this->imapPath));
 	}
@@ -113,8 +115,8 @@ class Mailbox {
 	 * The object has the following properties: messages, recent, unseen, uidnext, and uidvalidity.
 	 *
 	 * @return stdClass if the box doesn't exist
-	 */
-
+     * @throws Exception
+     */
 	public function statusMailbox() {
 		return imap_status($this->getImapStream(), $this->imapPath, SA_ALL);
 	}
@@ -127,8 +129,8 @@ class Mailbox {
 	 * The object has the following properties: messages, recent, unseen, uidnext, and uidvalidity.
 	 *
 	 * @return array listing the folders
-	 */
-
+     * @throws Exception
+     */
 	public function getListingFolders() {
 		$folders = imap_list($this->getImapStream(), $this->imapPath, "*");
 		foreach ($folders as $key => $folder)
@@ -173,24 +175,41 @@ class Mailbox {
 	 *    UNSEEN - match mails which have not been read yet
 	 *
 	 * @return array Mails ids
-	 */
+     * @throws Exception
+     */
 	public function searchMailbox($criteria = 'ALL') {
 		$mailsIds = imap_search($this->getImapStream(), $criteria, SE_UID, $this->serverEncoding);
 		return $mailsIds ? $mailsIds : array();
 	}
 
-	/**
-	 * Save mail body.
-	 * @return bool
-	 */
+    /**
+     * @return array
+     * @throws Exception
+     */
+	public function searchMailboxUnseen()
+    {
+        return $this->searchMailbox('UNSEEN');
+    }
+
+    /**
+     * Save mail body.
+     *
+     * @param $mailId
+     * @param string $filename
+     * @return bool
+     * @throws Exception
+     */
 	public function saveMail($mailId, $filename = 'email.eml') {
 		return imap_savebody($this->getImapStream(), $filename, $mailId, "", FT_UID);
 	}
 
-	/**
-	 * Marks mails listed in mailId for deletion.
-	 * @return bool
-	 */
+    /**
+     * Marks mails listed in mailId for deletion.
+     *
+     * @param $mailId
+     * @return bool
+     * @throws Exception
+     */
 	public function deleteMail($mailId) {
 		return imap_delete($this->getImapStream(), $mailId, FT_UID);
 	}
@@ -201,67 +220,86 @@ class Mailbox {
 
 	/**
 	 * Deletes all the mails marked for deletion by imap_delete(), imap_mail_move(), or imap_setflag_full().
-	 * @return bool
-	 */
+     * @throws Exception
+     */
 	public function expungeDeletedMails() {
 		return imap_expunge($this->getImapStream());
 	}
 
 	/**
 	 * Add the flag \Seen to a mail.
-	 * @return bool
-	 */
+     *
+     * @param $mailId
+     * @return bool
+     * @throws Exception
+     */
 	public function markMailAsRead($mailId) {
 		return $this->setFlag(array($mailId), '\\Seen');
 	}
 
 	/**
 	 * Remove the flag \Seen from a mail.
-	 * @return bool
-	 */
+     *
+     * @param $mailId
+     * @return bool
+     * @throws Exception
+     */
 	public function markMailAsUnread($mailId) {
 		return $this->clearFlag(array($mailId), '\\Seen');
 	}
 
 	/**
 	 * Add the flag \Flagged to a mail.
-	 * @return bool
-	 */
+     *
+     * @param $mailId
+     * @return bool
+     * @throws Exception
+     */
 	public function markMailAsImportant($mailId) {
 		return $this->setFlag(array($mailId), '\\Flagged');
 	}
 
 	/**
 	 * Add the flag \Seen to a mails.
-	 * @return bool
-	 */
+     *
+     * @param array $mailId
+     * @return bool
+     * @throws Exception
+     */
 	public function markMailsAsRead(array $mailId) {
 		return $this->setFlag($mailId, '\\Seen');
 	}
 
 	/**
 	 * Remove the flag \Seen from some mails.
-	 * @return bool
-	 */
+     *
+     * @param array $mailId
+     * @return bool
+     * @throws Exception
+     */
 	public function markMailsAsUnread(array $mailId) {
 		return $this->clearFlag($mailId, '\\Seen');
 	}
 
 	/**
 	 * Add the flag \Flagged to some mails.
-	 * @return bool
-	 */
+     *
+     * @param array $mailId
+     * @return bool
+     * @throws Exception
+     */
 	public function markMailsAsImportant(array $mailId) {
 		return $this->setFlag($mailId, '\\Flagged');
 	}
 
-	/**
-	 * Causes a store to add the specified flag to the flags set for the mails in the specified sequence.
-	 *
-	 * @param array $mailsIds
-	 * @param string $flag which you can set are \Seen, \Answered, \Flagged, \Deleted, and \Draft as defined by RFC2060.
-	 * @return bool
-	 */
+    /**
+     * Causes a store to add the specified flag to the flags set for the mails in the specified sequence.
+     *
+     * @param array $mailsIds
+     * @param string $flag which you can set are \Seen, \Answered, \Flagged, \Deleted, and \Draft as defined by RFC2060.
+     * @return bool
+     * @throws Exception
+     */
 	public function setFlag(array $mailsIds, $flag) {
 		return imap_setflag_full($this->getImapStream(), implode(',', $mailsIds), $flag, ST_UID);
 	}
@@ -272,7 +310,8 @@ class Mailbox {
 	 * @param array $mailsIds
 	 * @param string $flag which you can set are \Seen, \Answered, \Flagged, \Deleted, and \Draft as defined by RFC2060.
 	 * @return bool
-	 */
+     * @throws Exception
+     */
 	public function clearFlag(array $mailsIds, $flag) {
 		return imap_clearflag_full($this->getImapStream(), implode(',', $mailsIds), $flag, ST_UID);
 	}
@@ -300,7 +339,8 @@ class Mailbox {
 	 *
 	 * @param array $mailsIds
 	 * @return array
-	 */
+     * @throws Exception
+     */
 	public function getMailsInfo(array $mailsIds) {
 		$mails = imap_fetch_overview($this->getImapStream(), implode(',', $mailsIds), FT_UID);
 		if(is_array($mails) && count($mails))
@@ -335,8 +375,8 @@ class Mailbox {
 	 *  Size - mailbox size
 	 *
 	 * @return object Object with info | FALSE on failure
-	 */
-
+     * @throws Exception
+     */
 	public function getMailboxInfo() {
 		return imap_mailboxmsginfo($this->getImapStream());
 	}
@@ -356,49 +396,61 @@ class Mailbox {
 	 * @param int $criteria
 	 * @param bool $reverse
 	 * @return array Mails ids
-	 */
+     * @throws Exception
+     */
 	public function sortMails($criteria = SORTARRIVAL, $reverse = true) {
 		return imap_sort($this->getImapStream(), $criteria, $reverse, SE_UID);
 	}
 
 	/**
 	 * Get mails count in mail box
-	 * @return int
-	 */
+     *
+     * @throws Exception
+     */
 	public function countMails() {
 		return imap_num_msg($this->getImapStream());
 	}
 
 	/**
 	 * Retrieve the quota settings per user
+     *
 	 * @return array - FALSE in the case of call failure
-	 */
-	protected function getQuota() {
+     * @throws Exception
+     */
+	protected function getQuota()
+    {
 		return imap_get_quotaroot($this->getImapStream(), 'INBOX');
 	}
 
 	/**
 	 * Return quota limit in KB
-	 * @return int - FALSE in the case of call failure
-	 */
-	public function getQuotaLimit() {
-		$quota = $this->getQuota();
+	 * @return int|FALSE in the case of call failure
+     * @throws Exception
+     */
+	public function getQuotaLimit()
+    {
+		if(!$quota = $this->getQuota()){
+		    return false;
+        }
 		if(is_array($quota)) {
-			$quota = $quota['STORAGE']['limit'];
+			return $quota['STORAGE']['limit'];
 		}
-		return $quota;
+		return (int)$quota;
 	}
 
 	/**
 	 * Return quota usage in KB
-	 * @return int - FALSE in the case of call failure
-	 */
+	 * @return int|FALSE in the case of call failure
+     * @throws Exception
+     */
 	public function getQuotaUsage() {
-		$quota = $this->getQuota();
+		if(!$quota = $this->getQuota()){
+		    return false;
+        }
 		if(is_array($quota)) {
-			$quota = $quota['STORAGE']['usage'];
+			return $quota['STORAGE']['usage'];
 		}
-		return $quota;
+		return (int)$quota;
 	}
 
     /**
@@ -407,6 +459,7 @@ class Mailbox {
      * @param $mailId
      * @param bool $markAsSeen
      * @return IncomingMail
+     * @throws Exception
      */
 	public function getMail($mailId, $markAsSeen = true) {
 		
@@ -460,6 +513,7 @@ class Mailbox {
      * load mail parts - body plain & html and attachments
      * @param IncomingMail $mail
      * @return IncomingMail $mail 
+     * @throws Exception
      */
     public function getMailParts($mail)
     {
@@ -477,6 +531,13 @@ class Mailbox {
         return $mail;        
     }
 
+    /**
+     * @param IncomingMail $mail
+     * @param $partStructure
+     * @param $partNum
+     * @param bool $markAsSeen
+     * @throws Exception
+     */
     protected function initMailPart(IncomingMail $mail, $partStructure, $partNum, $markAsSeen = true) {
         $options = FT_UID;
         if(!$markAsSeen) {
@@ -594,12 +655,21 @@ class Mailbox {
 		return $newString;
 	}
 
-	PROTECTED function isUrlEncoded($string) {
+    /**
+     * @param $string
+     * @return bool
+     */
+	protected function isUrlEncoded($string) {
 		$hasInvalidChars = preg_match( '#[^%a-zA-Z0-9\-_\.\+]#', $string );
 		$hasEscapedChars = preg_match( '#%[a-zA-Z0-9]{2}#', $string );
 		return !$hasInvalidChars && $hasEscapedChars;
 	}
 
+    /**
+     * @param $string
+     * @param string $charset
+     * @return string
+     */
 	protected function decodeRFC2231($string, $charset = 'utf-8') {
 		if(preg_match("/^(.*?)'.*?'(.*?)$/", $string, $matches)) {
 			$encoding = $matches[1];
