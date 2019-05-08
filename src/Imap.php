@@ -39,7 +39,7 @@ use yii\base\InvalidConfigException;
  * ~~~
 **/
 
-class Imap extends Сomponent
+class Imap extends Component
 {
     
     /** @var array  */
