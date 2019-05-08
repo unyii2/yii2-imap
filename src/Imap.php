@@ -2,6 +2,7 @@
 
 namespace unyii2\imap;
 
+use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 
