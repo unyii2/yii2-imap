@@ -4,6 +4,8 @@ namespace unyii2\imap;
 
 use stdClass;
 use Throwable;
+use Yii;
+use yii\helpers\VarDumper;
 
 /**
    *Copyright (c) 2012 by Barbushin Sergey <barbushin@gmail.com>.
@@ -469,43 +471,54 @@ class Mailbox {
         $head = imap_rfc822_parse_headers(imap_fetchheader($this->getImapStream(), $mailId, FT_UID));        
 
 		$mail->id = $mailId;
-        $mail->messageId = $head->message_id;
-		$mail->date = date('Y-m-d H:i:s', isset($head->date) ? strtotime(preg_replace('/\(.*?\)/', '', $head->date)) : time());
-		$mail->subject = isset($head->subject) ? $this->decodeMimeStr($head->subject, $this->serverEncoding) : null;
-        
-		$mail->fromName = isset($head->from[0]->personal) ? $this->decodeMimeStr($head->from[0]->personal, $this->serverEncoding) : null;
-        
-		$mail->fromAddress = strtolower($head->from[0]->mailbox . '@' . (!empty($head->from[0]->host) ? $head->from[0]->host : ""));
 
-		if(isset($head->to)) {
-			$toStrings = array();
-			foreach($head->to as $to) {
-				if(!empty($to->mailbox) && !empty($to->host)) {
-					$toEmail = strtolower($to->mailbox . '@' . $to->host);
-					$toName = isset($to->personal) ? $this->decodeMimeStr($to->personal, $this->serverEncoding) : null;
-					$toStrings[] = $toName ? "$toName <$toEmail>" : $toEmail;
-					$mail->to[$toEmail] = $toName;
-				}
-			}
-			$mail->toString = implode(', ', $toStrings);
-		}
+		try {
+            $mail->date = date('Y-m-d H:i:s', isset($head->date) ? strtotime(preg_replace('/\(.*?\)/', '', $head->date)) : time());
+            $mail->fromAddress = strtolower($head->from[0]->mailbox . '@' . (!empty($head->from[0]->host) ? $head->from[0]->host : ""));
+            $mail->subject = isset($head->subject) ? $this->decodeMimeStr($head->subject, $this->serverEncoding) : null;
+            if (property_exists($head, 'message_id')) {
+                $mail->messageId = $head->message_id;
+            } elseif (isset($head->date)) {
+                $mail->messageId = '<' . $mail->date . '$' . $mail->fromAddress . '>';
+            } else {
+                $mail->messageId = '<' . md5($mail->subject) . '$' . $mail->fromAddress . '>';
+            }
 
-		if(isset($head->cc)) {
-			foreach($head->cc as $cc) {
-				$mail->cc[strtolower($cc->mailbox . '@' . (!empty($cc->host) ? $cc->host : ""))] = isset($cc->personal) ? $this->decodeMimeStr($cc->personal, $this->serverEncoding) : null;
-			}
-		}
+            $mail->fromName = isset($head->from[0]->personal) ? $this->decodeMimeStr($head->from[0]->personal, $this->serverEncoding) : null;
 
-		if(isset($head->reply_to)) {
-			foreach($head->reply_to as $replyTo) {
-				$mail->replyTo[strtolower((!empty($replyTo->mailbox) ? $replyTo->mailbox : "") . '@' . (!empty($replyTo->host) ? $replyTo->host : ""))] = isset($replyTo->personal) ? $this->decodeMimeStr($replyTo->personal, $this->serverEncoding) : null;
-			}
-		}
+            if (isset($head->to)) {
+                $toStrings = [];
+                foreach ($head->to as $to) {
+                    if (!empty($to->mailbox) && !empty($to->host)) {
+                        $toEmail = strtolower($to->mailbox . '@' . $to->host);
+                        $toName = isset($to->personal) ? $this->decodeMimeStr($to->personal, $this->serverEncoding) : null;
+                        $toStrings[] = $toName ? "$toName <$toEmail>" : $toEmail;
+                        $mail->to[$toEmail] = $toName;
+                    }
+                }
+                $mail->toString = implode(', ', $toStrings);
+            }
 
-        if($this->readMailParts){
+            if (isset($head->cc)) {
+                foreach ($head->cc as $cc) {
+                    $mail->cc[strtolower($cc->mailbox . '@' . (!empty($cc->host) ? $cc->host : ""))] = isset($cc->personal) ? $this->decodeMimeStr($cc->personal, $this->serverEncoding) : null;
+                }
+            }
+
+            if (isset($head->reply_to)) {
+                foreach ($head->reply_to as $replyTo) {
+                    $mail->replyTo[strtolower((!empty($replyTo->mailbox) ? $replyTo->mailbox : "") . '@' . (!empty($replyTo->host) ? $replyTo->host : ""))] = isset($replyTo->personal) ? $this->decodeMimeStr($replyTo->personal, $this->serverEncoding) : null;
+                }
+            }
+        }catch (\Exception $exception){
+            Yii::error('Can not read mail header:' . $exception->getMessage());
+            Yii::error(VarDumper::dumpAsString($head));
+        }
+
+        if ($this->readMailParts) {
             $mail = $this->getMailParts($mail);
         }
-        
+
 		return $mail;
 	}
 
