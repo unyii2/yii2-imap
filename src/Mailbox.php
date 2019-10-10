@@ -513,6 +513,7 @@ class Mailbox {
         }catch (\Exception $exception){
             Yii::error('Can not read mail header:' . $exception->getMessage());
             Yii::error(VarDumper::dumpAsString($head));
+            throw $exception;
         }
 
         if ($this->readMailParts) {
