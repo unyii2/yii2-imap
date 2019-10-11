@@ -476,7 +476,7 @@ class Mailbox {
             $mail->date = date('Y-m-d H:i:s', isset($head->date) ? strtotime(preg_replace('/\(.*?\)/', '', $head->date)) : time());
             $mail->fromAddress = strtolower($head->from[0]->mailbox . '@' . (!empty($head->from[0]->host) ? $head->from[0]->host : ""));
             $mail->subject = isset($head->subject) ? $this->decodeMimeStr($head->subject, $this->serverEncoding) : null;
-            if (property_exists($head, 'message_id')) {
+            if (property_exists($head, 'message_id') && isset($head->message_id)) {
                 $mail->messageId = $head->message_id;
             } elseif (isset($head->date)) {
                 $mail->messageId = '<' . $mail->date . '$' . $mail->fromAddress . '>';
