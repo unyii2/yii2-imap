@@ -766,6 +766,20 @@ class Mailbox {
             throw new Exception('personal was present on argument 1 passed to '.__METHOD__.'() but was not a string!');
         }
 
+        /**
+         * get if in email empty recipient "Reply-to: <>"
+         */
+        if($recipientMailbox === 'INVALID_ADDRESS'){
+            return null;
+        }
+
+        /**
+         * get if in email empty recipient "Reply-to: <>"
+         */
+        if($recipientHost === '.SYNTAX-ERROR.'){
+            return null;
+        }
+
         if ('' !== \trim($recipientMailbox) && '' !== \trim($recipientHost)) {
             $recipientEmail = \strtolower($recipientMailbox.'@'.$recipientHost);
             $recipientName = (\is_string($recipientPersonal) and '' !== \trim($recipientPersonal)) ? $this->decodeMimeStr($recipientPersonal) : null;
