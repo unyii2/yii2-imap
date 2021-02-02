@@ -489,11 +489,17 @@ class Mailbox {
             if (isset($head->to)) {
                 $toStrings = [];
                 foreach ($head->to as $to) {
-                    if (!empty($to->mailbox) && !empty($to->host)) {
-                        $toEmail = strtolower($to->mailbox . '@' . $to->host);
-                        $toName = isset($to->personal) ? $this->decodeMimeStr($to->personal, $this->serverEncoding) : null;
-                        $toStrings[] = $toName ? "$toName <$toEmail>" : $toEmail;
-                        $mail->to[$toEmail] = $toName;
+                    try {
+                        if ($toParsed = $this->getEmailAndNameFromRecipient($to)) {
+                            [$toEmail, $toName] = $toParsed;
+                            $toStrings[] = $toName ? "$toName <$toEmail>" : $toEmail;
+                            $mail->to[$toEmail] = $toName;
+
+                        }
+                    }catch (\Exception $exception){
+                        Yii::error($exception->getMessage());
+                        Yii::error(VarDumper::dumpAsString($to));
+                        Yii::error($exception->getTraceAsString());
                     }
                 }
                 $mail->toString = implode(', ', $toStrings);
@@ -501,13 +507,32 @@ class Mailbox {
 
             if (isset($head->cc)) {
                 foreach ($head->cc as $cc) {
-                    $mail->cc[strtolower($cc->mailbox . '@' . (!empty($cc->host) ? $cc->host : ""))] = isset($cc->personal) ? $this->decodeMimeStr($cc->personal, $this->serverEncoding) : null;
+                    try {
+                        if ($ccParsed = $this->getEmailAndNameFromRecipient($cc)) {
+                            [$ccEmail, $ccName] = $ccParsed;
+                            $mail->cc[$ccEmail] = $ccName;
+                        }
+                    }catch (\Exception $exception){
+                        Yii::error($exception->getMessage());
+                        Yii::error(VarDumper::dumpAsString($cc));
+                        Yii::error($exception->getTraceAsString());
+                    }
+
                 }
             }
 
             if (isset($head->reply_to)) {
                 foreach ($head->reply_to as $replyTo) {
-                    $mail->replyTo[strtolower((!empty($replyTo->mailbox) ? $replyTo->mailbox : "") . '@' . (!empty($replyTo->host) ? $replyTo->host : ""))] = isset($replyTo->personal) ? $this->decodeMimeStr($replyTo->personal, $this->serverEncoding) : null;
+                    try{
+                    if($replyToParsed = $this->getEmailAndNameFromRecipient($replyTo)){
+                        [$replyToEmail, $replyToName] = $replyToParsed;
+                        $mail->cc[$replyToEmail] = $replyToName;
+                    }
+                    }catch (\Exception $exception){
+                        Yii::error($exception->getMessage());
+                        Yii::error(VarDumper::dumpAsString($replyTo));
+                        Yii::error($exception->getTraceAsString());
+                    }
                 }
             }
         }catch (\Exception $exception){
@@ -712,6 +737,47 @@ class Mailbox {
 		}
 		return $convertedString ?: $string;
 	}
+
+    /**
+     * @psalm-return array{0:string, 1:string|null}|null
+     */
+    protected function getEmailAndNameFromRecipient(object $recipient): ?array
+    {
+        if (!isset($recipient->mailbox, $recipient->host)) {
+            return null;
+        }
+
+        /** @var mixed */
+        $recipientMailbox = $recipient->mailbox;
+
+        /** @var mixed */
+        $recipientHost = $recipient->host;
+
+        /** @var mixed */
+        $recipientPersonal = isset($recipient->personal) ? $recipient->personal : null;
+
+        if (!\is_string($recipientMailbox)) {
+            throw new Exception('mailbox was present on argument 1 passed to '.__METHOD__.'() but was not a string!');
+        }
+        if (!\is_string($recipientHost)) {
+            throw new Exception('host was present on argument 1 passed to '.__METHOD__.'() but was not a string!');
+        }
+        if (null !== $recipientPersonal && !\is_string($recipientPersonal)) {
+            throw new Exception('personal was present on argument 1 passed to '.__METHOD__.'() but was not a string!');
+        }
+
+        if ('' !== \trim($recipientMailbox) && '' !== \trim($recipientHost)) {
+            $recipientEmail = \strtolower($recipientMailbox.'@'.$recipientHost);
+            $recipientName = (\is_string($recipientPersonal) and '' !== \trim($recipientPersonal)) ? $this->decodeMimeStr($recipientPersonal) : null;
+
+            return [
+                $recipientEmail,
+                $recipientName,
+            ];
+        }
+
+        return null;
+    }
 
 	public function __destruct() {
 		$this->disconnect();
