@@ -6,6 +6,9 @@ use stdClass;
 use Throwable;
 use Yii;
 use yii\helpers\VarDumper;
+use function is_string;
+use function strtolower;
+use function trim;
 
 /**
    *Copyright (c) 2012 by Barbushin Sergey <barbushin@gmail.com>.
@@ -475,7 +478,7 @@ class Mailbox {
 		try {
             $mail->date = date('Y-m-d H:i:s', isset($head->date) ? strtotime(preg_replace('/\(.*?\)/', '', $head->date)) : time());
             $mail->fromAddress = strtolower($head->from[0]->mailbox . '@' . (!empty($head->from[0]->host) ? $head->from[0]->host : ""));
-            $mail->subject = isset($head->subject) ? $this->decodeMimeStr($head->subject, $this->serverEncoding) : null;
+            $mail->subject = isset($head->subject) ? $this->decodeMimeStr($head->subject, $this->serverEncoding) : '';
             if (property_exists($head, 'message_id') && isset($head->message_id)) {
                 $mail->messageId = $head->message_id;
             } elseif (isset($head->date)) {
@@ -756,13 +759,13 @@ class Mailbox {
         /** @var mixed */
         $recipientPersonal = isset($recipient->personal) ? $recipient->personal : null;
 
-        if (!\is_string($recipientMailbox)) {
+        if (!is_string($recipientMailbox)) {
             throw new Exception('mailbox was present on argument 1 passed to '.__METHOD__.'() but was not a string!');
         }
-        if (!\is_string($recipientHost)) {
+        if (!is_string($recipientHost)) {
             throw new Exception('host was present on argument 1 passed to '.__METHOD__.'() but was not a string!');
         }
-        if (null !== $recipientPersonal && !\is_string($recipientPersonal)) {
+        if (null !== $recipientPersonal && !is_string($recipientPersonal)) {
             throw new Exception('personal was present on argument 1 passed to '.__METHOD__.'() but was not a string!');
         }
 
@@ -780,9 +783,9 @@ class Mailbox {
             return null;
         }
 
-        if ('' !== \trim($recipientMailbox) && '' !== \trim($recipientHost)) {
-            $recipientEmail = \strtolower($recipientMailbox.'@'.$recipientHost);
-            $recipientName = (\is_string($recipientPersonal) and '' !== \trim($recipientPersonal)) ? $this->decodeMimeStr($recipientPersonal) : null;
+        if ('' !== trim($recipientMailbox) && '' !== trim($recipientHost)) {
+            $recipientEmail = strtolower($recipientMailbox.'@'.$recipientHost);
+            $recipientName = (is_string($recipientPersonal) and '' !== trim($recipientPersonal)) ? $this->decodeMimeStr($recipientPersonal) : null;
 
             return [
                 $recipientEmail,
